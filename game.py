@@ -240,7 +240,7 @@ class Game:
             del self.map[agent.next_pos]
         elif powerup_type == Powerup.EXTRAVISION:
             self.logs.append(f"player[{agent.player_id}]的agent[{agent.id}]获得视野扩展道具")
-            agent.vision_range += self.powerup_conf['extravision']['extra']
+            agent.vision_range = self.powerup_conf['extravision']['extra']
             agent.powerups["extravision"] = self.powerup_conf['extravision']['duration']
             del self.map[agent.next_pos]
 
@@ -427,14 +427,14 @@ class Game:
 
 
 
-
     def _reduce_powerup_duration(self, agent: Agent) -> None:
         for powerup in list(agent.powerups):
             agent.powerups[powerup] -= 1
             if agent.powerups[powerup] <= 0:
                 if powerup == 'extravision':
-                    agent.vision_range -= self.powerup_conf['extravision']['extra']
+                    agent.vision_range = self.map_conf['vision_range']
                 del agent.powerups[powerup]
+
 
     def get_result(self) -> Dict:
         scores = defaultdict(lambda : 0)
