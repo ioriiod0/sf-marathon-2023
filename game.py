@@ -176,6 +176,7 @@ class Game:
         self.rand = random.Random(seed)
         self.attacker_time_used = 0
         self.defender_time_used = 0
+        self.logs = []
 
         agent_id = 0
         
@@ -338,13 +339,27 @@ class Game:
                 agents.append(agent)
         agents = sorted(agents,key = lambda x: x.id)
         return agents
-        
+
+
+    def _refresh_powerups(self):
+        refresh_interval = self.map_conf.get('refresh_interval',0)
+        if self.steps >= 0 and refresh_interval > 0 and self.steps % refresh_interval == 0:
+            for pos, obj in self.map_template.items():
+                ty = obj['type']
+                if ty == CellType.POWERUP and pos not in self.map:
+                    # 随机选择一个powerup
+                    powerup = self.rand.choice(list(Powerup))
+                    self.map[pos] = {'type': CellType.POWERUP, 'powerup': powerup}
+
 
     def apply_actions(self,attacker_actions: Dict[int, str],defender_actions: Dict[int, str],attacker_time_used = 0,defender_time_used = 0) -> None:
         self.logs = []
         self.steps += 1
         self.attacker_time_used += attacker_time_used
         self.defender_time_used += defender_time_used
+
+        #刷新道具
+        self._refresh_powerups()
 
         #更新道具和无敌状态持续时间
         for agent in self.agents.values():
