@@ -142,6 +142,7 @@ class Game:
         self.attacker = None
         self.defender = None
         self.logs = []
+        self.to_refresh = defaultdict(list)
 
 
     def _load_map(self, map_data: Dict) -> Tuple[Dict[Tuple[int, int], str],Dict,Dict]:
@@ -177,6 +178,7 @@ class Game:
         self.attacker_time_used = 0
         self.defender_time_used = 0
         self.logs = []
+        self.to_refresh = defaultdict(list)
 
         agent_id = 0
         
@@ -221,30 +223,35 @@ class Game:
 
     def _handle_powerup(self, agent: Agent, cell: Dict) -> None:
         #处理获得道具的逻辑
-
         powerup_type = cell['powerup']
         if agent.role == agent.DEFENDER and powerup_type == Powerup.INVISIBILITY:
             self.logs.append(f"player[{agent.player_id}]的agent[{agent.id}]获得隐身道具")
             agent.powerups["invisibility"] = self.powerup_conf['invisibility']['duration']
-            del self.map[agent.next_pos]
+
         elif agent.role == agent.DEFENDER and powerup_type == Powerup.SHIELD:
             self.logs.append(f"player[{agent.player_id}]的agent[{agent.id}]获得防守道具")
             agent.powerups["shield"] = self.powerup_conf['shield']['duration']
-            del self.map[agent.next_pos]
+
         elif agent.role == agent.ATTACKER and powerup_type == Powerup.SWORD:
             self.logs.append(f"player[{agent.player_id}]的agent[{agent.id}]获得攻击道具")
             agent.powerups["sword"] = self.powerup_conf['sword']['duration']
-            del self.map[agent.next_pos]
+
         elif powerup_type == Powerup.PASSWALL:
             self.logs.append(f"player[{agent.player_id}]的agent[{agent.id}]获得穿墙道具")
             agent.powerups["passwall"] = self.powerup_conf['passwall']['duration']
-            del self.map[agent.next_pos]
+
         elif powerup_type == Powerup.EXTRAVISION:
             self.logs.append(f"player[{agent.player_id}]的agent[{agent.id}]获得视野扩展道具")
             agent.vision_range = self.powerup_conf['extravision']['extra']
             agent.powerups["extravision"] = self.powerup_conf['extravision']['duration']
-            del self.map[agent.next_pos]
 
+        else:
+            return
+
+        del self.map[agent.next_pos]
+        refresh_interval = self.map_conf.get('refresh_interval',0)
+        if refresh_interval > 0:
+            self.to_refresh[self.steps+refresh_interval].append(agent.next_pos)
 
 
     def _handle_coin(self, agent: Agent, cell: Dict) -> None:
@@ -276,11 +283,11 @@ class Game:
         
         if attacker.powerups.get("sword"):
             # 攻击方获得防守方的分数的一半
-            attacker.score += defender.score
+            attacker.score += defender.score + self.map_conf['catch_score']
             score_delta = defender.score
             defender.score = 0
         else:
-            attacker.score += defender.score // 2
+            attacker.score += defender.score // 2 + self.map_conf['catch_score']
             score_delta = defender.score // 2
             defender.score //= 2
 
@@ -342,14 +349,10 @@ class Game:
 
 
     def _refresh_powerups(self):
-        refresh_interval = self.map_conf.get('refresh_interval',0)
-        if self.steps >= 0 and refresh_interval > 0 and self.steps % refresh_interval == 0:
-            for pos, obj in self.map_template.items():
-                ty = obj['type']
-                if ty == CellType.POWERUP and pos not in self.map:
-                    # 随机选择一个powerup
-                    powerup = self.rand.choice(list(Powerup))
-                    self.map[pos] = {'type': CellType.POWERUP, 'powerup': powerup}
+        for pos in self.to_refresh.pop(self.steps,[]):
+            # 随机选择一个powerup
+            powerup = self.rand.choice(list(Powerup))
+            self.map[pos] = {'type': CellType.POWERUP, 'powerup': powerup}
 
 
     def apply_actions(self,attacker_actions: Dict[int, str],defender_actions: Dict[int, str],attacker_time_used = 0,defender_time_used = 0) -> None:

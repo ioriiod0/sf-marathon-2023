@@ -5,7 +5,9 @@
         "invulnerability_duration": 3,
         "max_steps": 1152,
         "coin_score": 2,
-        "vision_range": 2
+        "vision_range": 2,
+        "catch_score": 6,
+        "refresh_interval": 24
     },
     "powerup_conf": {
         "invisibility": {
