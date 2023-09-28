@@ -283,16 +283,16 @@ class Game:
         
         if attacker.powerups.get("sword"):
             # 攻击方获得防守方的分数的一半
-            attacker.score += defender.score + self.map_conf['catch_score']
-            score_delta = defender.score
+            score_delta = defender.score + self.map_conf['catch_score']
+            attacker.score += score_delta
             defender.score = 0
         else:
-            attacker.score += defender.score // 2 + self.map_conf['catch_score']
-            score_delta = defender.score // 2
+            score_delta = defender.score // 2 + self.map_conf['catch_score']
+            attacker.score += score_delta
             defender.score //= 2
 
         #回到起始地点
-        self.logs.append(f"player[{attacker.player_id}]的agent[{attacker.id}]抓获player[{defender.player_id}]的agent[{defender.id}],抢夺了{score_delta}金币")
+        self.logs.append(f"player[{attacker.player_id}]的agent[{attacker.id}]抓获player[{defender.player_id}]的agent[{defender.id}],获得了{score_delta}金币")
         defender.next_pos = defender.origin_pos
         defender.invulnerability_duration = self.map_conf['invulnerability_duration']
 
